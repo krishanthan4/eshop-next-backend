@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model admin {
+  fname String? @db.VarChar(45)
+  lname String? @db.VarChar(45)
+  email String  @id @db.VarChar(100)
+  vcode String? @db.VarChar(20)
+}
+
+model cart {
+  cartId    Int     @id @default(autoincrement())
+  qty       Int?
+  userEmail String  @db.VarChar(100)
+  productId Int
+  product   product @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cart_product1")
+  user      user    @relation(fields: [userEmail], references: [email], onDelete: NoAction, onUpdate: NoAction, map: "fk_cart_user1")
+
+  @@index([productId], map: "fk_cart_product1_idx")
+  @@index([userEmail], map: "fk_cart_user1_idx")
+}
+
+model category {
+  catId   Int     @id @default(autoincrement())
+  catName String? @db.VarChar(50)
+  catImg  String? @db.Text
+  catIcon String  @db.TinyText
+  model   model[]
+}
+
+model city {
+  cityId             Int       @id @default(autoincrement())
+  cityName           String?   @db.VarChar(45)
+  districtDistrictId Int
+  address            address[]
+  district           district  @relation(fields: [districtDistrictId], references: [districtId], onDelete: NoAction, onUpdate: NoAction, map: "fk_city_district1")
+
+  @@index([districtDistrictId], map: "fk_city_district1_idx")
+}
+
+model color {
+  clrId   Int       @id @default(autoincrement())
+  clrName String    @db.VarChar(20)
+  product product[]
+}
+
+model condition {
+  conditionId   Int       @id @default(autoincrement())
+  conditionName String    @db.VarChar(20)
+  product       product[]
+}
+
+model district {
+  districtId         Int      @id @default(autoincrement())
+  districtName       String?  @db.VarChar(45)
+  provinceProvinceId Int
+  city               city[]
+  province           province @relation(fields: [provinceProvinceId], references: [provinceId], onDelete: NoAction, onUpdate: NoAction, map: "fk_district_province1")
+
+  @@index([provinceProvinceId], map: "fk_district_province1_idx")
+}
+
+model gender {
+  genderId   Int    @id @default(autoincrement())
+  genderName String @db.VarChar(10)
+  user       user[]
+}
+
+model invoice {
+  invoiceId          Int                  @id @default(autoincrement())
+  orderId            String?              @db.VarChar(20)
+  date               DateTime?            @db.DateTime(0)
+  total              Float?
+  userEmail          String               @db.VarChar(100)
+  user               user                 @relation(fields: [userEmail], references: [email], onDelete: NoAction, onUpdate: NoAction, map: "fk_invoice_user1")
+  invoiceHasProducts invoiceHasProducts[]
+
+  @@index([userEmail], map: "fk_invoice_user1_idx")
+}
+
+model invoiceHasProducts {
+  invoiceId                                               Int
+  productId                                               Int
+  boughtQty                                               Int
+  orderStatus                                             Int
+  orderStatus_invoiceHasProducts_orderStatusToorderStatus orderStatus @relation("invoiceHasProducts_orderStatusToorderStatus", fields: [orderStatus], references: [orderStatusId], onDelete: NoAction, onUpdate: NoAction, map: "fk_invoice_has_products_orderStatus1")
+  invoice                                                 invoice     @relation(fields: [invoiceId], references: [invoiceId], onDelete: NoAction, onUpdate: NoAction, map: "invoice_has_products_ibfk_1")
+  product                                                 product     @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "invoice_has_products_ibfk_2")
+
+  @@id([invoiceId, productId])
+  @@index([orderStatus], map: "fk_invoice_has_products_order_status1_idx")
+  @@index([productId], map: "product_id")
+}
+
+model model {
+  modelId       Int       @id @default(autoincrement())
+  modelName     String    @db.VarChar(50)
+  categoryCatId Int
+  category      category  @relation(fields: [categoryCatId], references: [catId], onDelete: NoAction, onUpdate: NoAction, map: "fk_model_category1")
+  product       product[]
+
+  @@index([categoryCatId], map: "fk_model_category1_idx")
+}
+
+model orderStatus {
+  orderStatusId                                                  Int                  @id @default(autoincrement())
+  orderStatusName                                                String               @db.VarChar(25)
+  invoiceHasProducts_invoiceHasProducts_orderStatusToorderStatus invoiceHasProducts[] @relation("invoiceHasProducts_orderStatusToorderStatus")
+}
+
+model product {
+  id                   Int                  @id @default(autoincrement())
+  price                Float?
+  qty                  Int?
+  description          String?              @db.Text
+  title                String?              @db.VarChar(100)
+  datetimeAdded        DateTime             @db.DateTime(0)
+  deliveryFee          Float?
+  conditionConditionId Int
+  statusStatusId       Int
+  userEmail            String               @db.VarChar(100)
+  colorClrId           Int
+  modelModelId         Int
+  cart                 cart[]
+  invoiceHasProducts   invoiceHasProducts[]
+  color                color                @relation(fields: [colorClrId], references: [clrId], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_color1")
+  condition            condition            @relation(fields: [conditionConditionId], references: [conditionId], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_condition1")
+  model                model                @relation(fields: [modelModelId], references: [modelId], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_model1")
+  status               status               @relation(fields: [statusStatusId], references: [statusId], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_status1")
+  user                 user                 @relation(fields: [userEmail], references: [email], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_user1")
+  productImg           productImg[]
+
+  @@index([conditionConditionId], map: "fk_product_condition1_idx")
+  @@index([statusStatusId], map: "fk_product_status1_idx")
+  @@index([userEmail], map: "fk_product_user1_idx")
+  @@index([colorClrId], map: "fk_product_color1_idx")
+  @@index([modelModelId], map: "fk_product_model1_idx")
+}
+
+model productImg {
+  imgPath   String  @id @db.VarChar(100)
+  productId Int
+  product   product @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_img_product1")
+
+  @@index([productId], map: "fk_product_img_product1_idx")
+}
+
+model province {
+  provinceId   Int        @id @default(autoincrement())
+  provinceName String?    @db.VarChar(45)
+  district     district[]
+}
+
+model status {
+  statusId Int       @id @default(autoincrement())
+  status   String?   @db.VarChar(45)
+  product  product[]
+  user     user[]
+}
+
+model user {
+  fname            String?   @db.VarChar(50)
+  lname            String?   @db.VarChar(45)
+  email            String    @id @db.VarChar(100)
+  password         String    @db.VarChar(20)
+  mobile           String?   @db.VarChar(10)
+  joinedDate       DateTime  @db.DateTime(0)
+  verificationCode String    @db.VarChar(20)
+  genderGenderId   Int?
+  statusStatusId   Int
+  address          address[]
+  cart             cart[]
+  invoice          invoice[]
+  product          product[]
+  gender           gender?   @relation(fields: [genderGenderId], references: [genderId], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_gender")
+  status           status    @relation(fields: [statusStatusId], references: [statusId], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_status1")
+
+  @@index([statusStatusId], map: "fk_user_status1_idx")
+  @@index([genderGenderId], map: "fk_user_gender_idx")
+}
+
+model address {
+  userEmail  String  @db.VarChar(100)
+  cityCityId Int
+  addressId  Int     @id @default(autoincrement())
+  line1      String? @db.Text
+  line2      String? @db.Text
+  postalCode String? @db.VarChar(10)
+  city       city    @relation(fields: [cityCityId], references: [cityId], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_has_city_city1")
+  user       user    @relation(fields: [userEmail], references: [email], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_has_city_user1")
+
+  @@index([cityCityId], map: "fk_user_has_city_city1_idx")
+  @@index([userEmail], map: "fk_user_has_city_user1_idx")
+}
